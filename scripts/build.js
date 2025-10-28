@@ -1,49 +1,59 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.build = void 0;
+exports.build = build;
 const node_path_1 = __importDefault(require("node:path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const loader_1 = require("./loader");
 const toUrl_1 = require("./toUrl");
 const locales_1 = require("./locales");
 const formatToCode_1 = require("./actions/utils/formatToCode");
-async function build() {
-    const quizzes = await (0, loader_1.loadQuizzes)();
-    const redirects = [];
-    // redirect homepage to github repo
-    locales_1.supportedLocales.filter(locale => locale !== locales_1.defaultLocale).forEach((locale) => {
-        redirects.push([`/${locale}`, `${toUrl_1.REPO}/blob/main/README.${locale}.md`, 302]);
-    });
-    locales_1.supportedLocales.forEach((locale) => {
-        redirects.push([`/raw/${locale}`, (0, toUrl_1.toQuestionsRawREADME)(locale), 302]);
-    });
-    for (const quiz of quizzes) {
-        for (const locale of locales_1.supportedLocales) {
-            const info = (0, loader_1.resolveInfo)(quiz, locale);
-            const code = (0, formatToCode_1.formatToCode)(quiz, locale);
-            const url = (0, toUrl_1.toPlaygroundUrl)(code, info.tsconfig || {});
-            if (locale === locales_1.defaultLocale) {
-                redirects.push([`/${quiz.no}`, (0, toUrl_1.toQuizREADME)(quiz, locale, true), 302]);
-                redirects.push([`/${quiz.no}/raw`, (0, toUrl_1.toRawREADME)(quiz, locale), 302]);
-                redirects.push([`/${quiz.no}/play`, url, 302]);
-                redirects.push([`/${quiz.no}/answer`, (0, toUrl_1.toShareAnswerFull)(quiz), 302]);
+function build() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const quizzes = yield (0, loader_1.loadQuizzes)();
+        const redirects = [];
+        // redirect homepage to github repo
+        locales_1.supportedLocales.filter(locale => locale !== locales_1.defaultLocale).forEach((locale) => {
+            redirects.push([`/${locale}`, `${toUrl_1.REPO}/blob/main/README.${locale}.md`, 302]);
+        });
+        locales_1.supportedLocales.forEach((locale) => {
+            redirects.push([`/raw/${locale}`, (0, toUrl_1.toQuestionsRawREADME)(locale), 302]);
+        });
+        for (const quiz of quizzes) {
+            for (const locale of locales_1.supportedLocales) {
+                const info = (0, loader_1.resolveInfo)(quiz, locale);
+                const code = (0, formatToCode_1.formatToCode)(quiz, locale);
+                const url = (0, toUrl_1.toPlaygroundUrl)(code, info.tsconfig || {});
+                if (locale === locales_1.defaultLocale) {
+                    redirects.push([`/${quiz.no}`, (0, toUrl_1.toQuizREADME)(quiz, locale, true), 302]);
+                    redirects.push([`/${quiz.no}/raw`, (0, toUrl_1.toRawREADME)(quiz, locale), 302]);
+                    redirects.push([`/${quiz.no}/play`, url, 302]);
+                    redirects.push([`/${quiz.no}/answer`, (0, toUrl_1.toShareAnswerFull)(quiz), 302]);
+                }
+                else {
+                    redirects.push([`/${quiz.no}/${locale}`, (0, toUrl_1.toQuizREADME)(quiz, locale, true), 302]);
+                    redirects.push([`/${quiz.no}/raw/${locale}`, (0, toUrl_1.toRawREADME)(quiz, locale), 302]);
+                    redirects.push([`/${quiz.no}/play/${locale}`, url, 302]);
+                    redirects.push([`/${quiz.no}/answer/${locale}`, (0, toUrl_1.toShareAnswerFull)(quiz, locale), 302]);
+                }
             }
-            else {
-                redirects.push([`/${quiz.no}/${locale}`, (0, toUrl_1.toQuizREADME)(quiz, locale, true), 302]);
-                redirects.push([`/${quiz.no}/raw/${locale}`, (0, toUrl_1.toRawREADME)(quiz, locale), 302]);
-                redirects.push([`/${quiz.no}/play/${locale}`, url, 302]);
-                redirects.push([`/${quiz.no}/answer/${locale}`, (0, toUrl_1.toShareAnswerFull)(quiz, locale), 302]);
-            }
+            redirects.push([`/${quiz.no}/solutions`, (0, toUrl_1.toSolutionsFull)(quiz.no), 302]);
         }
-        redirects.push([`/${quiz.no}/solutions`, (0, toUrl_1.toSolutionsFull)(quiz.no), 302]);
-    }
-    const dist = node_path_1.default.resolve(__dirname, 'dist');
-    await fs_extra_1.default.remove(dist);
-    await fs_extra_1.default.ensureDir(dist);
-    await fs_extra_1.default.writeFileSync(node_path_1.default.join(dist, '_redirects'), redirects.map(i => i.join('\t')).join('\n'), 'utf-8');
+        const dist = node_path_1.default.resolve(__dirname, 'dist');
+        yield fs_extra_1.default.remove(dist);
+        yield fs_extra_1.default.ensureDir(dist);
+        yield fs_extra_1.default.writeFileSync(node_path_1.default.join(dist, '_redirects'), redirects.map(i => i.join('\t')).join('\n'), 'utf-8');
+    });
 }
-exports.build = build;
 build();

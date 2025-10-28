@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -29,21 +38,23 @@ function calculateFileHash(filePathFull) {
         });
     });
 }
-async function takeSnapshot(quizzesPath) {
-    let snapshot = {};
-    const files = fs_extra_1.default.readdirSync(quizzesPath);
-    for (const file of files) {
-        // Might be a file, or a folder
-        const fPath = node_path_1.default.join(quizzesPath, file);
-        const fStats = fs_extra_1.default.statSync(fPath);
-        if (fStats.isDirectory()) {
-            snapshot = Object.assign(Object.assign({}, snapshot), (await takeSnapshot(fPath)));
+function takeSnapshot(quizzesPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let snapshot = {};
+        const files = fs_extra_1.default.readdirSync(quizzesPath);
+        for (const file of files) {
+            // Might be a file, or a folder
+            const fPath = node_path_1.default.join(quizzesPath, file);
+            const fStats = fs_extra_1.default.statSync(fPath);
+            if (fStats.isDirectory()) {
+                snapshot = Object.assign(Object.assign({}, snapshot), (yield takeSnapshot(fPath)));
+            }
+            else {
+                snapshot[file] = yield calculateFileHash(fPath);
+            }
         }
-        else {
-            snapshot[file] = await calculateFileHash(fPath);
-        }
-    }
-    return snapshot;
+        return snapshot;
+    });
 }
 function readPlaygroundCache(playgroundCachePath) {
     if (!fs_extra_1.default.existsSync(playgroundCachePath))
@@ -71,71 +82,73 @@ function isQuizWritable(quizFileName, overridableFiles, playgroundSnapshot) {
     return !!(overridableFiles[quizFileName]
         || (!overridableFiles[quizFileName] && !playgroundSnapshot[quizFileName]));
 }
-async function generatePlayground() {
-    const playgroundPath = node_path_1.default.join(__dirname, '../playground');
-    const playgroundCachePath = node_path_1.default.join(__dirname, '../.playgroundcache');
-    let locale = locales_1.supportedLocales.find(locale => locale === node_process_1.default.argv[2]);
-    console.log(ansis_1.default.bold.cyan('Generating local playground...\n'));
-    let overridableFiles;
-    let keepChanges = false;
-    const currentPlaygroundCache = readPlaygroundCache(playgroundCachePath);
-    let playgroundSnapshot;
-    if (node_process_1.default.argv.length === 3 && (node_process_1.default.argv[2] === '--keep-changes' || node_process_1.default.argv[2] === '-K')) {
-        console.log(ansis_1.default.bold.cyan('We will keep your changes while generating.\n'));
-        keepChanges = true;
-        playgroundSnapshot = await takeSnapshot(playgroundPath);
-        overridableFiles = calculateOverridableFiles(currentPlaygroundCache, playgroundSnapshot);
-    }
-    else if (fs_extra_1.default.existsSync(playgroundPath)) {
-        const result = await (0, prompts_1.default)([{
-                name: 'confirm',
-                type: 'confirm',
-                initial: false,
-                message: 'The playground directory already exists, it may contains the answers you did. Do you want to override it?',
-            }]);
-        if (!(result === null || result === void 0 ? void 0 : result.confirm))
-            return console.log(ansis_1.default.yellow('Skipped.'));
-    }
-    if (!locale) {
-        const result = await (0, prompts_1.default)([{
-                name: 'locale',
-                type: 'select',
-                message: 'Select language:',
-                choices: locales_1.supportedLocales.map(i => ({
-                    title: i,
-                    value: i,
-                })),
-            }]);
-        if (!result)
-            return console.log(ansis_1.default.yellow('Skipped.'));
-        locale = result.locale;
-    }
-    if (!keepChanges) {
-        await fs_extra_1.default.remove(playgroundPath);
-        await fs_extra_1.default.ensureDir(playgroundPath);
-    }
-    const quizzes = await (0, loader_1.loadQuizzes)();
-    const incomingQuizzesCache = {};
-    for (const quiz of quizzes) {
-        const { difficulty, title } = (0, loader_1.resolveInfo)(quiz, locale);
-        const code = (0, formatToCode_1.formatToCode)(quiz, locale);
-        if (difficulty === undefined || title === undefined) {
-            console.log(ansis_1.default.yellow `${quiz.no} has no ${locale.toUpperCase()} version. Skipping`);
-            continue;
+function generatePlayground() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const playgroundPath = node_path_1.default.join(__dirname, '../playground');
+        const playgroundCachePath = node_path_1.default.join(__dirname, '../.playgroundcache');
+        let locale = locales_1.supportedLocales.find(locale => locale === node_process_1.default.argv[2]);
+        console.log(ansis_1.default.bold.cyan('Generating local playground...\n'));
+        let overridableFiles;
+        let keepChanges = false;
+        const currentPlaygroundCache = readPlaygroundCache(playgroundCachePath);
+        let playgroundSnapshot;
+        if (node_process_1.default.argv.length === 3 && (node_process_1.default.argv[2] === '--keep-changes' || node_process_1.default.argv[2] === '-K')) {
+            console.log(ansis_1.default.bold.cyan('We will keep your changes while generating.\n'));
+            keepChanges = true;
+            playgroundSnapshot = yield takeSnapshot(playgroundPath);
+            overridableFiles = calculateOverridableFiles(currentPlaygroundCache, playgroundSnapshot);
         }
-        const quizzesPathByDifficulty = node_path_1.default.join(playgroundPath, difficulty);
-        const quizFileName = `${(0, issue_pr_1.getQuestionFullName)(quiz.no, difficulty, title)}.ts`;
-        const quizPathFull = node_path_1.default.join(quizzesPathByDifficulty, quizFileName);
-        if (!keepChanges || (keepChanges && isQuizWritable(quizFileName, overridableFiles, playgroundSnapshot))) {
-            if (!fs_extra_1.default.existsSync(quizzesPathByDifficulty))
-                fs_extra_1.default.mkdirSync(quizzesPathByDifficulty);
-            await fs_extra_1.default.writeFile(quizPathFull, code, 'utf-8');
-            incomingQuizzesCache[quizFileName] = await calculateFileHash(quizPathFull);
+        else if (fs_extra_1.default.existsSync(playgroundPath)) {
+            const result = yield (0, prompts_1.default)([{
+                    name: 'confirm',
+                    type: 'confirm',
+                    initial: false,
+                    message: 'The playground directory already exists, it may contains the answers you did. Do you want to override it?',
+                }]);
+            if (!(result === null || result === void 0 ? void 0 : result.confirm))
+                return console.log(ansis_1.default.yellow('Skipped.'));
         }
-    }
-    fs_extra_1.default.writeFile(playgroundCachePath, JSON.stringify(Object.assign(Object.assign({}, currentPlaygroundCache), incomingQuizzesCache)));
-    console.log();
-    console.log(ansis_1.default.bold.green('Local playground generated at: ') + ansis_1.default.dim(playgroundPath));
-    console.log();
+        if (!locale) {
+            const result = yield (0, prompts_1.default)([{
+                    name: 'locale',
+                    type: 'select',
+                    message: 'Select language:',
+                    choices: locales_1.supportedLocales.map(i => ({
+                        title: i,
+                        value: i,
+                    })),
+                }]);
+            if (!result)
+                return console.log(ansis_1.default.yellow('Skipped.'));
+            locale = result.locale;
+        }
+        if (!keepChanges) {
+            yield fs_extra_1.default.remove(playgroundPath);
+            yield fs_extra_1.default.ensureDir(playgroundPath);
+        }
+        const quizzes = yield (0, loader_1.loadQuizzes)();
+        const incomingQuizzesCache = {};
+        for (const quiz of quizzes) {
+            const { difficulty, title } = (0, loader_1.resolveInfo)(quiz, locale);
+            const code = (0, formatToCode_1.formatToCode)(quiz, locale);
+            if (difficulty === undefined || title === undefined) {
+                console.log(ansis_1.default.yellow `${quiz.no} has no ${locale.toUpperCase()} version. Skipping`);
+                continue;
+            }
+            const quizzesPathByDifficulty = node_path_1.default.join(playgroundPath, difficulty);
+            const quizFileName = `${(0, issue_pr_1.getQuestionFullName)(quiz.no, difficulty, title)}.ts`;
+            const quizPathFull = node_path_1.default.join(quizzesPathByDifficulty, quizFileName);
+            if (!keepChanges || (keepChanges && isQuizWritable(quizFileName, overridableFiles, playgroundSnapshot))) {
+                if (!fs_extra_1.default.existsSync(quizzesPathByDifficulty))
+                    fs_extra_1.default.mkdirSync(quizzesPathByDifficulty);
+                yield fs_extra_1.default.writeFile(quizPathFull, code, 'utf-8');
+                incomingQuizzesCache[quizFileName] = yield calculateFileHash(quizPathFull);
+            }
+        }
+        fs_extra_1.default.writeFile(playgroundCachePath, JSON.stringify(Object.assign(Object.assign({}, currentPlaygroundCache), incomingQuizzesCache)));
+        console.log();
+        console.log(ansis_1.default.bold.green('Local playground generated at: ') + ansis_1.default.dim(playgroundPath));
+        console.log();
+    });
 }
 generatePlayground();

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatToCode = void 0;
+exports.formatToCode = formatToCode;
 const locales_1 = require("../../locales");
 const toCommentBlock_1 = require("./toCommentBlock");
 const toInfoHeader_1 = require("./toInfoHeader");
@@ -13,4 +13,3 @@ function formatToCode(quiz, locale) {
         + (0, toLinks_1.toLinks)(quiz, locale))
         + (0, toDivider_1.toDivider)((0, locales_1.t)(locale, 'divider.code-start'))}\n${(quiz.template || '').trim()}\n${(0, toDivider_1.toDivider)((0, locales_1.t)(locale, 'divider.test-cases'))}${(quiz.tests || '').trim()}\n${(0, toDivider_1.toDivider)((0, locales_1.t)(locale, 'divider.further-steps'))}${(0, toCommentBlock_1.toCommentBlock)((0, toFooter_1.toFooter)(quiz, locale))}`;
 }
-exports.formatToCode = formatToCode;

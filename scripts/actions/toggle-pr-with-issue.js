@@ -1,6 +1,15 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const action = async (github, context, core) => {
+const action = (github, context, core) => __awaiter(void 0, void 0, void 0, function* () {
     const payload = context.payload || {};
     const issue = payload.issue;
     if (!issue)
@@ -18,7 +27,7 @@ const action = async (github, context, core) => {
     // action: reopened
     // action: closed
     // find pull request
-    const { data: pulls } = await github.rest.pulls.list({
+    const { data: pulls } = yield github.rest.pulls.list({
         owner: context.repo.owner,
         repo: context.repo.repo,
         state: action === 'closed' ? 'open' : 'closed',
@@ -36,11 +45,11 @@ const action = async (github, context, core) => {
     }
     core.info(JSON.stringify(context));
     if (context.payload.action === 'reopened') {
-        await github.rest.pulls.update(Object.assign(Object.assign({}, context.repo), { pull_number: existing_pull.number, state: 'open' }));
+        yield github.rest.pulls.update(Object.assign(Object.assign({}, context.repo), { pull_number: existing_pull.number, state: 'open' }));
     }
     else {
         // close
-        await github.rest.pulls.update(Object.assign(Object.assign({}, context.repo), { pull_number: existing_pull.number, state: 'closed' }));
+        yield github.rest.pulls.update(Object.assign(Object.assign({}, context.repo), { pull_number: existing_pull.number, state: 'closed' }));
     }
-};
+});
 exports.default = action;

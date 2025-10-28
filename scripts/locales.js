@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.f = exports.t = exports.messages = exports.supportedLocales = exports.defaultLocale = void 0;
+exports.messages = exports.supportedLocales = exports.defaultLocale = void 0;
+exports.t = t;
+exports.f = f;
 exports.defaultLocale = 'en';
 exports.supportedLocales = ['en', 'zh-CN', 'ja', 'ko', 'pt-BR'];
 exports.messages = {
@@ -16,10 +18,8 @@ function t(locale, key) {
         throw new Error(`Missing message for key "${key}"`);
     return result;
 }
-exports.t = t;
 function f(name, locale, ext) {
     if (locale === exports.defaultLocale)
         return `${name}.${ext}`;
     return `${name}.${locale}.${ext}`;
 }
-exports.f = f;

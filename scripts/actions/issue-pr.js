@@ -1,9 +1,19 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getQuestionFullName = exports.getOthers = void 0;
+exports.getOthers = void 0;
+exports.getQuestionFullName = getQuestionFullName;
 const js_yaml_1 = __importDefault(require("js-yaml"));
 const limax_1 = __importDefault(require("limax"));
 const octokit_create_pull_request_1 = require("@type-challenges/octokit-create-pull-request");
@@ -43,7 +53,7 @@ const Messages = {
 };
 const getOthers = (condition, a, b) => condition ? a : b;
 exports.getOthers = getOthers;
-const action = async (github, context, core) => {
+const action = (github, context, core) => __awaiter(void 0, void 0, void 0, function* () {
     const payload = context.payload || {};
     const issue = payload.issue;
     const no = context.issue.number;
@@ -71,10 +81,10 @@ const action = async (github, context, core) => {
         core.info(JSON.stringify(context.payload, null, 2));
         // invalid issue
         if (!question || !template || !tests || !info) {
-            await updateComment(github, context, Messages[locale].issue_invalid_reply);
+            yield updateComment(github, context, Messages[locale].issue_invalid_reply);
             return;
         }
-        const { data: user } = await github.rest.users.getByUsername({
+        const { data: user } = yield github.rest.users.getByUsername({
             username: issue.user.login,
         });
         // allow user to override the author info when filled in the Issue
@@ -101,7 +111,7 @@ const action = async (github, context, core) => {
         };
         core.info('-----Parsed-----');
         core.info(JSON.stringify(quiz, null, 2));
-        const { data: pulls } = await github.rest.pulls.list({
+        const { data: pulls } = yield github.rest.pulls.list({
             owner: context.repo.owner,
             repo: context.repo.repo,
             state: 'open',
@@ -115,7 +125,7 @@ const action = async (github, context, core) => {
             [`${dir}/template.ts`]: `${template}\n`,
             [`${dir}/test-cases.ts`]: `${tests}\n`,
         };
-        await (0, octokit_create_pull_request_1.PushCommit)(github, {
+        yield (0, octokit_create_pull_request_1.PushCommit)(github, {
             owner: context.repo.owner,
             repo: context.repo.repo,
             base: 'main',
@@ -136,11 +146,11 @@ const action = async (github, context, core) => {
         if (existing_pull) {
             core.info('-----Pull Request Existed-----');
             core.info(JSON.stringify(existing_pull, null, 2));
-            await updateComment(github, context, createMessageBody(existing_pull.number));
+            yield updateComment(github, context, createMessageBody(existing_pull.number));
         }
         else {
             core.info('-----Creating PR-----');
-            const { data: pr } = await github.rest.pulls.create({
+            const { data: pr } = yield github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 base: 'main',
@@ -149,7 +159,7 @@ const action = async (github, context, core) => {
                 body: `This is an auto-generated PR that auto reflect on #${no}, please go to #${no} for discussion or making changes.\n\nCloses #${no}`,
                 labels: ['auto-generated'],
             });
-            await github.rest.issues.addLabels({
+            yield github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
@@ -158,37 +168,39 @@ const action = async (github, context, core) => {
             core.info('-----Pull Request-----');
             core.info(JSON.stringify(pr, null, 2));
             if (pr)
-                await updateComment(github, context, createMessageBody(pr.number));
+                yield updateComment(github, context, createMessageBody(pr.number));
         }
     }
     else {
         core.info('No matched labels, skipped');
     }
-};
-async function updateComment(github, context, body) {
-    const { data: comments } = await github.rest.issues.listComments({
-        issue_number: context.issue.number,
-        owner: context.repo.owner,
-        repo: context.repo.repo,
+});
+function updateComment(github, context, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: comments } = yield github.rest.issues.listComments({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+        });
+        const existing_comment = comments.find(i => { var _a; return ((_a = i.user) === null || _a === void 0 ? void 0 : _a.login) === 'github-actions[bot]'; });
+        if (existing_comment) {
+            return yield github.rest.issues.updateComment({
+                comment_id: existing_comment.id,
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+            });
+        }
+        else {
+            return yield github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+            });
+        }
     });
-    const existing_comment = comments.find(i => { var _a; return ((_a = i.user) === null || _a === void 0 ? void 0 : _a.login) === 'github-actions[bot]'; });
-    if (existing_comment) {
-        return await github.rest.issues.updateComment({
-            comment_id: existing_comment.id,
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body,
-        });
-    }
-    else {
-        return await github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body,
-        });
-    }
 }
 function getCodeBlock(text, title, lang = 'ts') {
     const regex = new RegExp(`## ${title}[\\s\\S]*?\`\`\`${lang}([\\s\\S]*?)\`\`\``);
@@ -210,5 +222,4 @@ function getTimestampBadge() {
 function getQuestionFullName(no, difficulty, title) {
     return `${String(no).padStart(5, '0')}-${difficulty}-${(0, limax_1.default)(title.replace(/\./g, '-').replace(/<.*>/g, ''), { tone: false })}`;
 }
-exports.getQuestionFullName = getQuestionFullName;
 exports.default = action;

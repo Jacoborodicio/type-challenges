@@ -1,9 +1,20 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateREADMEs = exports.toPlanTextLink = exports.toBadgeLink = void 0;
+exports.toBadgeLink = toBadgeLink;
+exports.toPlanTextLink = toPlanTextLink;
+exports.updateREADMEs = updateREADMEs;
 const node_path_1 = __importDefault(require("node:path"));
 const node_process_1 = __importDefault(require("node:process"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
@@ -41,11 +52,9 @@ function toBadge(label, text, color, args = '') {
 function toBadgeLink(url, label, text, color, args = '') {
     return `<a href="${url}" target="_blank">${toBadge(label, text, color, args)}</a> `;
 }
-exports.toBadgeLink = toBadgeLink;
 function toPlanTextLink(url, _label, text, _color, _args = '') {
     return `<a href="${url}" target="_blank">${text}</a> `;
 }
-exports.toPlanTextLink = toPlanTextLink;
 function toAuthorInfo(author = {}) {
     return `by ${author.name}${author.github ? ` <a href="https://github.com/${author.github}" target="_blank">@${author.github}</a>` : ''}`;
 }
@@ -89,101 +98,108 @@ function getQuizzesByTag(quizzes, locale, tag) {
         return !!((_a = info.tags) === null || _a === void 0 ? void 0 : _a.includes(tag));
     });
 }
-async function insertInfoReadme(filepath, quiz, locale, quizzes) {
-    if (!fs_extra_1.default.existsSync(filepath))
-        return;
-    let text = await fs_extra_1.default.readFile(filepath, 'utf-8');
-    /* eslint-disable prefer-template */
-    if (!text.match(/<!--info-header-start-->[\s\S]*<!--info-header-end-->/))
-        text = `<!--info-header-start--><!--info-header-end-->\n\n${text}`;
-    if (!text.match(/<!--info-footer-start-->[\s\S]*<!--info-footer-end-->/))
-        text = `${text}\n\n<!--info-footer-start--><!--info-footer-end-->`;
-    const info = (0, loader_1.resolveInfo)(quiz, locale);
-    const availableLocales = locales_1.supportedLocales.filter(l => l !== locale).filter(l => !!quiz.readme[l]);
-    text = text
-        .replace(/<!--info-header-start-->[\s\S]*<!--info-header-end-->/, '<!--info-header-start-->'
-        + `<h1>${escapeHtml(info.title || '')} ${toDifficultyBadge(quiz.difficulty, locale)} ${(info.tags || []).map(i => toBadge('', `#${i}`, '999')).join(' ')}</h1>`
-        + `<blockquote><p>${toAuthorInfo(info.author)}</p></blockquote>`
-        + '<p>'
-        + toBadgeLink((0, toUrl_1.toPlayShort)(quiz.no, locale), '', (0, locales_1.t)(locale, 'badge.take-the-challenge'), '3178c6', '?logo=typescript&logoColor=white')
-        + (availableLocales.length ? ('&nbsp;&nbsp;&nbsp;' + availableLocales.map(l => toBadgeLink((0, toUrl_1.toNearborREADME)(quiz, l), '', (0, locales_1.t)(l, 'display'), 'gray')).join(' ')) : '')
-        + '</p>'
-        + '<!--info-header-end-->')
-        .replace(/<!--info-footer-start-->[\s\S]*<!--info-footer-end-->/, '<!--info-footer-start--><br>'
-        + toBadgeLink(`../../${(0, locales_1.f)('README', locale, 'md')}`, '', (0, locales_1.t)(locale, 'badge.back'), 'grey')
-        + toBadgeLink((0, toUrl_1.toAnswerShort)(quiz.no, locale), '', (0, locales_1.t)(locale, 'badge.share-your-solutions'), 'teal')
-        + toBadgeLink((0, toUrl_1.toSolutionsShort)(quiz.no), '', (0, locales_1.t)(locale, 'badge.checkout-solutions'), 'de5a77', '?logo=awesome-lists&logoColor=white')
-        + (Array.isArray(info.related) && info.related.length ? `<hr><h3>${(0, locales_1.t)(locale, 'readme.related-challenges')}</h3>${quizNoToBadges(info.related, quizzes, locale, true)}` : '')
-        + '<!--info-footer-end-->');
-    /* eslint-enable prefer-template */
-    await fs_extra_1.default.writeFile(filepath, text, 'utf-8');
+function insertInfoReadme(filepath, quiz, locale, quizzes) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!fs_extra_1.default.existsSync(filepath))
+            return;
+        let text = yield fs_extra_1.default.readFile(filepath, 'utf-8');
+        /* eslint-disable prefer-template */
+        if (!text.match(/<!--info-header-start-->[\s\S]*<!--info-header-end-->/))
+            text = `<!--info-header-start--><!--info-header-end-->\n\n${text}`;
+        if (!text.match(/<!--info-footer-start-->[\s\S]*<!--info-footer-end-->/))
+            text = `${text}\n\n<!--info-footer-start--><!--info-footer-end-->`;
+        const info = (0, loader_1.resolveInfo)(quiz, locale);
+        const availableLocales = locales_1.supportedLocales.filter(l => l !== locale).filter(l => !!quiz.readme[l]);
+        text = text
+            .replace(/<!--info-header-start-->[\s\S]*<!--info-header-end-->/, '<!--info-header-start-->'
+            + `<h1>${escapeHtml(info.title || '')} ${toDifficultyBadge(quiz.difficulty, locale)} ${(info.tags || []).map(i => toBadge('', `#${i}`, '999')).join(' ')}</h1>`
+            + `<blockquote><p>${toAuthorInfo(info.author)}</p></blockquote>`
+            + '<p>'
+            + toBadgeLink((0, toUrl_1.toPlayShort)(quiz.no, locale), '', (0, locales_1.t)(locale, 'badge.take-the-challenge'), '3178c6', '?logo=typescript&logoColor=white')
+            + (availableLocales.length ? ('&nbsp;&nbsp;&nbsp;' + availableLocales.map(l => toBadgeLink((0, toUrl_1.toNearborREADME)(quiz, l), '', (0, locales_1.t)(l, 'display'), 'gray')).join(' ')) : '')
+            + '</p>'
+            + '<!--info-header-end-->')
+            .replace(/<!--info-footer-start-->[\s\S]*<!--info-footer-end-->/, '<!--info-footer-start--><br>'
+            + toBadgeLink(`../../${(0, locales_1.f)('README', locale, 'md')}`, '', (0, locales_1.t)(locale, 'badge.back'), 'grey')
+            + toBadgeLink((0, toUrl_1.toAnswerShort)(quiz.no, locale), '', (0, locales_1.t)(locale, 'badge.share-your-solutions'), 'teal')
+            + toBadgeLink((0, toUrl_1.toSolutionsShort)(quiz.no), '', (0, locales_1.t)(locale, 'badge.checkout-solutions'), 'de5a77', '?logo=awesome-lists&logoColor=white')
+            + (Array.isArray(info.related) && info.related.length ? `<hr><h3>${(0, locales_1.t)(locale, 'readme.related-challenges')}</h3>${quizNoToBadges(info.related, quizzes, locale, true)}` : '')
+            + '<!--info-footer-end-->');
+        /* eslint-enable prefer-template */
+        yield fs_extra_1.default.writeFile(filepath, text, 'utf-8');
+    });
 }
-async function updateIndexREADME(quizzes) {
-    // update index README
-    for (const locale of locales_1.supportedLocales) {
-        const filepath = node_path_1.default.resolve(__dirname, '..', (0, locales_1.f)('README', locale, 'md'));
-        let challengesREADME = '';
-        let prev = '';
-        // difficulty
-        const quizzesByDifficulty = [...quizzes].sort((a, b) => DifficultyRank.indexOf(a.difficulty) - DifficultyRank.indexOf(b.difficulty));
-        for (const quiz of quizzesByDifficulty) {
-            if (prev !== quiz.difficulty)
-                challengesREADME += `${prev ? '<br><br>' : ''}${toDifficultyBadgeInverted(quiz.difficulty, locale, quizzesByDifficulty.filter(q => q.difficulty === quiz.difficulty).length)}<br>`;
-            challengesREADME += quizToBadge(quiz, locale);
-            prev = quiz.difficulty;
-        }
-        // by tags
-        challengesREADME += `<br><details><summary>${toDetailsInnerText('by-tags', locale)}</summary><br><table><tbody>`;
-        const tags = getAllTags(quizzes, locale);
-        for (const tag of tags) {
-            challengesREADME += `<tr><td>${toBadge('', `#${tag}`, '999')}</td><td>`;
-            getQuizzesByTag(quizzesByDifficulty, locale, tag)
-                .forEach((quiz) => {
-                challengesREADME += quizToBadge(quiz, locale);
-            });
-            challengesREADME += '</td></tr>';
-        }
-        challengesREADME += '<tr><td><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></td><td></td></tr>';
-        challengesREADME += '</tbody></table></details>';
-        // by plain text
-        prev = '';
-        challengesREADME += `<br><details><summary>${toDetailsInnerText('by-plain-text', locale)}</summary><br>`;
-        for (const quiz of quizzesByDifficulty) {
-            if (prev !== quiz.difficulty)
-                challengesREADME += `${prev ? '</ul>' : ''}<h3>${toDifficultyPlainText(quiz.difficulty, locale, quizzesByDifficulty.filter(q => q.difficulty === quiz.difficulty).length)}</h3><ul>`;
-            challengesREADME += `<li>${quizToBadge(quiz, locale, false, false)}</li>`;
-            prev = quiz.difficulty;
-        }
-        challengesREADME += '</ul></details><br>';
-        let readme = await fs_extra_1.default.readFile(filepath, 'utf-8');
-        readme = readme.replace(/<!--challenges-start-->[\s\S]*<!--challenges-end-->/m, `<!--challenges-start-->\n${challengesREADME}\n<!--challenges-end-->`);
-        await fs_extra_1.default.writeFile(filepath, readme, 'utf-8');
-    }
-}
-async function updateQuestionsREADME(quizzes) {
-    const questionsDir = node_path_1.default.resolve(__dirname, '../questions');
-    // update each questions' readme
-    for (const quiz of quizzes) {
+function updateIndexREADME(quizzes) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // update index README
         for (const locale of locales_1.supportedLocales) {
-            await insertInfoReadme(node_path_1.default.join(questionsDir, quiz.path, (0, locales_1.f)('README', locale, 'md')), quiz, locale, quizzes);
+            const filepath = node_path_1.default.resolve(__dirname, '..', (0, locales_1.f)('README', locale, 'md'));
+            let challengesREADME = '';
+            let prev = '';
+            // difficulty
+            const quizzesByDifficulty = [...quizzes].sort((a, b) => DifficultyRank.indexOf(a.difficulty) - DifficultyRank.indexOf(b.difficulty));
+            for (const quiz of quizzesByDifficulty) {
+                if (prev !== quiz.difficulty)
+                    challengesREADME += `${prev ? '<br><br>' : ''}${toDifficultyBadgeInverted(quiz.difficulty, locale, quizzesByDifficulty.filter(q => q.difficulty === quiz.difficulty).length)}<br>`;
+                challengesREADME += quizToBadge(quiz, locale);
+                prev = quiz.difficulty;
+            }
+            // by tags
+            challengesREADME += `<br><details><summary>${toDetailsInnerText('by-tags', locale)}</summary><br><table><tbody>`;
+            const tags = getAllTags(quizzes, locale);
+            for (const tag of tags) {
+                challengesREADME += `<tr><td>${toBadge('', `#${tag}`, '999')}</td><td>`;
+                getQuizzesByTag(quizzesByDifficulty, locale, tag)
+                    .forEach((quiz) => {
+                    challengesREADME += quizToBadge(quiz, locale);
+                });
+                challengesREADME += '</td></tr>';
+            }
+            challengesREADME += '<tr><td><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></td><td></td></tr>';
+            challengesREADME += '</tbody></table></details>';
+            // by plain text
+            prev = '';
+            challengesREADME += `<br><details><summary>${toDetailsInnerText('by-plain-text', locale)}</summary><br>`;
+            for (const quiz of quizzesByDifficulty) {
+                if (prev !== quiz.difficulty)
+                    challengesREADME += `${prev ? '</ul>' : ''}<h3>${toDifficultyPlainText(quiz.difficulty, locale, quizzesByDifficulty.filter(q => q.difficulty === quiz.difficulty).length)}</h3><ul>`;
+                challengesREADME += `<li>${quizToBadge(quiz, locale, false, false)}</li>`;
+                prev = quiz.difficulty;
+            }
+            challengesREADME += '</ul></details><br>';
+            let readme = yield fs_extra_1.default.readFile(filepath, 'utf-8');
+            readme = readme.replace(/<!--challenges-start-->[\s\S]*<!--challenges-end-->/m, `<!--challenges-start-->\n${challengesREADME}\n<!--challenges-end-->`);
+            yield fs_extra_1.default.writeFile(filepath, readme, 'utf-8');
         }
-    }
+    });
 }
-async function updateREADMEs(type) {
-    const quizzes = await (0, loader_1.loadQuizzes)();
-    quizzes.sort((a, b) => a.no - b.no);
-    if (type === 'quiz') {
-        await updateQuestionsREADME(quizzes);
-    }
-    else if (type === 'index') {
-        await updateIndexREADME(quizzes);
-    }
-    else {
-        await Promise.all([
-            updateIndexREADME(quizzes),
-            updateQuestionsREADME(quizzes),
-        ]);
-    }
+function updateQuestionsREADME(quizzes) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const questionsDir = node_path_1.default.resolve(__dirname, '../questions');
+        // update each questions' readme
+        for (const quiz of quizzes) {
+            for (const locale of locales_1.supportedLocales) {
+                yield insertInfoReadme(node_path_1.default.join(questionsDir, quiz.path, (0, locales_1.f)('README', locale, 'md')), quiz, locale, quizzes);
+            }
+        }
+    });
 }
-exports.updateREADMEs = updateREADMEs;
+function updateREADMEs(type) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const quizzes = yield (0, loader_1.loadQuizzes)();
+        quizzes.sort((a, b) => a.no - b.no);
+        if (type === 'quiz') {
+            yield updateQuestionsREADME(quizzes);
+        }
+        else if (type === 'index') {
+            yield updateIndexREADME(quizzes);
+        }
+        else {
+            yield Promise.all([
+                updateIndexREADME(quizzes),
+                updateQuestionsREADME(quizzes),
+            ]);
+        }
+    });
+}
 updateREADMEs(node_process_1.default.argv.slice(2)[0]);

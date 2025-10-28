@@ -1,44 +1,62 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveInfo = exports.loadQuizByNo = exports.loadQuiz = exports.loadQuizzes = exports.QUIZ_ROOT = exports.loadInfo = exports.readmeCleanUp = exports.loadLocaleVariations = exports.loadFile = void 0;
+exports.QUIZ_ROOT = void 0;
+exports.loadFile = loadFile;
+exports.loadLocaleVariations = loadLocaleVariations;
+exports.readmeCleanUp = readmeCleanUp;
+exports.loadInfo = loadInfo;
+exports.loadQuizzes = loadQuizzes;
+exports.loadQuiz = loadQuiz;
+exports.loadQuizByNo = loadQuizByNo;
+exports.resolveInfo = resolveInfo;
 const node_path_1 = __importDefault(require("node:path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const fast_glob_1 = __importDefault(require("fast-glob"));
 const js_yaml_1 = __importDefault(require("js-yaml"));
 const locales_1 = require("./locales");
-async function loadFile(filepath) {
-    if (fs_extra_1.default.existsSync(filepath))
-        return await fs_extra_1.default.readFile(filepath, 'utf-8');
-    return undefined;
+function loadFile(filepath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (fs_extra_1.default.existsSync(filepath))
+            return yield fs_extra_1.default.readFile(filepath, 'utf-8');
+        return undefined;
+    });
 }
-exports.loadFile = loadFile;
-async function loadLocaleVariations(filepath, preprocessor = s => s) {
-    const { ext, dir, name } = node_path_1.default.parse(filepath);
-    const data = {};
-    for (const locale of locales_1.supportedLocales) {
-        const file = preprocessor(await loadFile(node_path_1.default.join(dir, `${name}.${locale}${ext}`)) || '');
-        if (file)
-            data[locale] = file;
-    }
-    if (!data[locales_1.defaultLocale]) {
-        // default version
-        const file = preprocessor(await loadFile(filepath) || '');
-        if (file)
-            data[locales_1.defaultLocale] = file;
-    }
-    return data;
+function loadLocaleVariations(filepath_1) {
+    return __awaiter(this, arguments, void 0, function* (filepath, preprocessor = s => s) {
+        const { ext, dir, name } = node_path_1.default.parse(filepath);
+        const data = {};
+        for (const locale of locales_1.supportedLocales) {
+            const file = preprocessor((yield loadFile(node_path_1.default.join(dir, `${name}.${locale}${ext}`))) || '');
+            if (file)
+                data[locale] = file;
+        }
+        if (!data[locales_1.defaultLocale]) {
+            // default version
+            const file = preprocessor((yield loadFile(filepath)) || '');
+            if (file)
+                data[locales_1.defaultLocale] = file;
+        }
+        return data;
+    });
 }
-exports.loadLocaleVariations = loadLocaleVariations;
 function readmeCleanUp(text) {
     return text
         .replace(/<!--info-header-start-->[\s\S]*<!--info-header-end-->/, '')
         .replace(/<!--info-footer-start-->[\s\S]*<!--info-footer-end-->/, '')
         .trim();
 }
-exports.readmeCleanUp = readmeCleanUp;
 function loadInfo(s) {
     const object = js_yaml_1.default.load(s);
     if (!object)
@@ -58,39 +76,41 @@ function loadInfo(s) {
     }
     return object;
 }
-exports.loadInfo = loadInfo;
 exports.QUIZ_ROOT = node_path_1.default.resolve(__dirname, '../questions');
-async function loadQuizzes() {
-    const folders = await (0, fast_glob_1.default)('{0..9}*-*', {
-        onlyDirectories: true,
-        cwd: exports.QUIZ_ROOT,
+function loadQuizzes() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const folders = yield (0, fast_glob_1.default)('{0..9}*-*', {
+            onlyDirectories: true,
+            cwd: exports.QUIZ_ROOT,
+        });
+        const quizzes = yield Promise.all(folders.map((dir) => __awaiter(this, void 0, void 0, function* () { return loadQuiz(dir); })));
+        return quizzes;
     });
-    const quizzes = await Promise.all(folders.map(async (dir) => loadQuiz(dir)));
-    return quizzes;
 }
-exports.loadQuizzes = loadQuizzes;
-async function loadQuiz(dir) {
-    return {
-        no: Number(dir.replace(/^(\d+)-.*/, '$1')),
-        difficulty: dir.replace(/^\d+-(.+?)-.*$/, '$1'),
-        path: dir,
-        info: await loadLocaleVariations(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'info.yml'), loadInfo),
-        readme: await loadLocaleVariations(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'README.md'), readmeCleanUp),
-        template: await loadFile(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'template.ts')) || '',
-        tests: await loadFile(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'test-cases.ts')),
-    };
-}
-exports.loadQuiz = loadQuiz;
-async function loadQuizByNo(no) {
-    const folders = await (0, fast_glob_1.default)(`${no}-*`, {
-        onlyDirectories: true,
-        cwd: exports.QUIZ_ROOT,
+function loadQuiz(dir) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return {
+            no: Number(dir.replace(/^(\d+)-.*/, '$1')),
+            difficulty: dir.replace(/^\d+-(.+?)-.*$/, '$1'),
+            path: dir,
+            info: yield loadLocaleVariations(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'info.yml'), loadInfo),
+            readme: yield loadLocaleVariations(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'README.md'), readmeCleanUp),
+            template: (yield loadFile(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'template.ts'))) || '',
+            tests: yield loadFile(node_path_1.default.join(exports.QUIZ_ROOT, dir, 'test-cases.ts')),
+        };
     });
-    if (folders.length)
-        return await loadQuiz(folders[0]);
-    return undefined;
 }
-exports.loadQuizByNo = loadQuizByNo;
+function loadQuizByNo(no) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const folders = yield (0, fast_glob_1.default)(`${no}-*`, {
+            onlyDirectories: true,
+            cwd: exports.QUIZ_ROOT,
+        });
+        if (folders.length)
+            return yield loadQuiz(folders[0]);
+        return undefined;
+    });
+}
 function resolveInfo(quiz, locale = locales_1.defaultLocale) {
     var _a, _b, _c, _d;
     const info = Object.assign(Object.assign({}, quiz.info[locales_1.defaultLocale]), quiz.info[locale]);
@@ -101,4 +121,3 @@ function resolveInfo(quiz, locale = locales_1.defaultLocale) {
         info.tags = info.tags.split(',').map(i => i.trim()).filter(Boolean);
     return info;
 }
-exports.resolveInfo = resolveInfo;
